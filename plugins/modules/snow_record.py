@@ -331,11 +331,9 @@ def main():
             module.result['record'] = dict(data)
             module.result['changed'] = True
 
-        # do we want to check if the record is non-existent?
         elif state == 'absent':
             try:
-                resource = module.connection.resource(
-                    api_path='/table/' + table)
+                resource = module.connection.resource(api_path=f'/table/{table}')
                 response = resource.get(query={lookup_field: number})
                 res = response.one()
                 module.result['record'] = dict(Success=True)
@@ -348,11 +346,9 @@ def main():
                 )
                 )
 
-        # Let's simulate modification
         else:
             try:
-                resource = module.connection.resource(
-                    api_path='/table/' + table)
+                resource = module.connection.resource(api_path=f'/table/{table}')
                 response = resource.get(query={lookup_field: number})
                 res = response.one()
                 for key, value in data.items():
@@ -373,7 +369,7 @@ def main():
     # are we creating a new record?
     if state == 'present' and number is None:
         try:
-            resource = module.connection.resource(api_path='/table/' + table)
+            resource = module.connection.resource(api_path=f'/table/{table}')
             response = resource.create(payload=dict(data))
             record = response.one()
         except pysnow.exceptions.UnexpectedResponseFormat as e:
@@ -383,14 +379,13 @@ def main():
             )
             )
         except pysnow.legacy_exceptions.UnexpectedResponse as e:
-            module.fail(msg="Failed to create record due to %s" % to_native(e))
+            module.fail(msg=f"Failed to create record due to {to_native(e)}")
         module.result['record'] = record
         module.result['changed'] = True
 
-    # we are deleting a record
     elif state == 'absent':
         try:
-            resource = module.connection.resource(api_path='/table/' + table)
+            resource = module.connection.resource(api_path=f'/table/{table}')
             res = resource.delete(query={lookup_field: number})
         except pysnow.exceptions.NoResults:
             res = dict(Success=True)
@@ -403,7 +398,7 @@ def main():
             )
             )
         except pysnow.legacy_exceptions.UnexpectedResponse as e:
-            module.fail(msg="Failed to delete record due to %s" % to_native(e))
+            module.fail(msg=f"Failed to delete record due to {to_native(e)}")
         except Exception as detail:
             module.fail_json(msg="Failed to delete record: {0}".format(
                 to_native(detail)
@@ -412,10 +407,9 @@ def main():
         module.result['record'] = res
         module.result['changed'] = True
 
-    # We want to update a record
     else:
         try:
-            resource = module.connection.resource(api_path='/table/' + table)
+            resource = module.connection.resource(api_path=f'/table/{table}')
             response = resource.get(query={lookup_field: number})
             record = response.one()
             if data is not None:
@@ -441,9 +435,7 @@ def main():
             )
             module.fail(msg=snow_error)
         except pysnow.legacy_exceptions.UnexpectedResponse as e:
-            module.fail(
-                msg="Failed to update record due to %s" % to_native(e)
-            )
+            module.fail(msg=f"Failed to update record due to {to_native(e)}")
         except Exception as detail:
             module.fail(msg="Failed to update record: {0}".format(
                 to_native(detail)

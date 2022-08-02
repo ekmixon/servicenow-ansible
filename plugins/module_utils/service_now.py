@@ -98,9 +98,7 @@ class ServiceNowModule(AnsibleModule):
         self.result = {}
 
         # OpenID information
-        self.openid = {}
-        self.openid['url'] = {}
-
+        self.openid = {'url': {}}
         # Authenticated connection
         self.connection = None
 
@@ -362,8 +360,6 @@ class ServiceNowModule(AnsibleModule):
     #
 
     def fail(self, msg):
-        if self.log_level == 'debug':
-            pass
         AnsibleModule.fail_json(self, msg=msg, **self.result)
 
     def exit(self):
@@ -375,10 +371,9 @@ class ServiceNowModule(AnsibleModule):
                 #                  'ServiceNowModuleKWArgs': self.ServiceNowModuleKWArgs,
                 #               }
             }
-        if self.log_level == 'debug':
-            if self.module_debug:
-                self.result['invocation'].update(
-                    module_debug=self.module_debug)
+        if self.log_level == 'debug' and self.module_debug:
+            self.result['invocation'].update(
+                module_debug=self.module_debug)
         AnsibleModule.exit_json(self, **self.result)
 
     def _merge_dictionaries(self, a, b):
@@ -388,7 +383,7 @@ class ServiceNowModule(AnsibleModule):
 
     @staticmethod
     def create_argument_spec():
-        argument_spec = dict(
+        return dict(
             auth=dict(
                 type='str',
                 choices=[
@@ -398,10 +393,7 @@ class ServiceNowModule(AnsibleModule):
                     'openid',
                 ],
                 default='basic',
-                fallback=(
-                    env_fallback,
-                    ['SN_AUTH']
-                )
+                fallback=(env_fallback, ['SN_AUTH']),
             ),
             log_level=dict(
                 type='str',
@@ -410,83 +402,51 @@ class ServiceNowModule(AnsibleModule):
                     'info',
                     'normal',
                 ],
-                default='normal'
+                default='normal',
             ),
-            raise_on_empty=dict(
-                type='bool',
-                default=True
-            ),
+            raise_on_empty=dict(type='bool', default=True),
             instance=dict(
                 type='str',
                 required=False,
-                fallback=(
-                    env_fallback,
-                    ['SN_INSTANCE']
-                )
+                fallback=(env_fallback, ['SN_INSTANCE']),
             ),
             host=dict(
-                type='str',
-                required=False,
-                fallback=(
-                    env_fallback,
-                    ['SN_HOST']
-                )
+                type='str', required=False, fallback=(env_fallback, ['SN_HOST'])
             ),
             username=dict(
                 type='str',
                 required=False,
-                fallback=(
-                    env_fallback,
-                    ['SN_USERNAME']
-                )
+                fallback=(env_fallback, ['SN_USERNAME']),
             ),
             password=dict(
                 type='str',
                 required=False,
                 no_log=True,
-                fallback=(
-                    env_fallback,
-                    ['SN_PASSWORD']
-                )
+                fallback=(env_fallback, ['SN_PASSWORD']),
             ),
             client_id=dict(
                 type='str',
                 required=False,
                 no_log=True,
-                fallback=(
-                    env_fallback,
-                    ['SN_CLIENTID']
-                )
+                fallback=(env_fallback, ['SN_CLIENTID']),
             ),
             client_secret=dict(
                 type='str',
                 required=False,
                 no_log=True,
-                fallback=(
-                    env_fallback,
-                    ['SN_CLIENTSECRET']
-                )
+                fallback=(env_fallback, ['SN_CLIENTSECRET']),
             ),
             token=dict(
                 type='str',
                 required=False,
                 no_log=True,
-                fallback=(
-                    env_fallback,
-                    ['SN_TOKEN']
-                )
+                fallback=(env_fallback, ['SN_TOKEN']),
             ),
-            openid=dict(
-                type='dict',
-                required=False
-            ),
+            openid=dict(type='dict', required=False),
             openid_issuer=dict(
                 type='str',
                 required=False,
-                fallback=(
-                    env_fallback,
-                    ['OPENID_ISSUER']
-                )
+                fallback=(env_fallback, ['OPENID_ISSUER']),
             ),
             # offline_access is not supported.
             openid_scope=dict(
@@ -494,10 +454,6 @@ class ServiceNowModule(AnsibleModule):
                 elements='str',
                 required=False,
                 default=['openid'],
-                fallback=(
-                    env_fallback,
-                    ['OPENID_SCOPE']
-                )
+                fallback=(env_fallback, ['OPENID_SCOPE']),
             ),
         )
-        return argument_spec

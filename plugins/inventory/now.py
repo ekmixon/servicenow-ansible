@@ -195,16 +195,16 @@ class InventoryModule(BaseInventoryPlugin, Constructable, Cacheable):
         proxy = self.get_option('proxy')
 
         if self.get_option('instance'):
-            fqdn = "%s.service-now.com" % (self.get_option('instance'))
+            fqdn = f"{self.get_option('instance')}.service-now.com"
         elif self.get_option('host'):
             fqdn = self.get_option('host')
         else:
             raise AnsibleError("instance or host must be defined")
 
         # build url
-        self.url = "https://%s/%s" % (fqdn, path)
+        self.url = f"https://{fqdn}/{path}"
         url = self.url
-        self.display.vvv("Connecting to...%s" % url)
+        self.display.vvv(f"Connecting to...{url}")
         results = []
 
         if not self.update_cache:
@@ -229,11 +229,12 @@ class InventoryModule(BaseInventoryPlugin, Constructable, Cacheable):
                                            'https': proxy
                                        })
                 if response.status_code == 400 and self.get_option('enhanced'):
-                    raise AnsibleError("http error (%s): %s. Have you installed the enhanced inventory update set on your instance?" %
-                                       (response.status_code, response.text))
+                    raise AnsibleError(
+                        f"http error ({response.status_code}): {response.text}. Have you installed the enhanced inventory update set on your instance?"
+                    )
+
                 elif response.status_code != 200:
-                    raise AnsibleError("http error (%s): %s" %
-                                       (response.status_code, response.text))
+                    raise AnsibleError(f"http error ({response.status_code}): {response.text}")
                 results += response.json()['result']
                 next_link = response.links.get('next', {})
                 url = next_link.get('url', None)
@@ -269,15 +270,29 @@ class InventoryModule(BaseInventoryPlugin, Constructable, Cacheable):
         enhanced_groups = False
 
         if enhanced:
-            path = '/api/snc/ansible_inventory' + options + \
-                "&sysparm_fields=" + ','.join(fields) + \
-                "&sysparm_query=" + filter_results + \
-                "&table=" + table
+            path = (
+                (
+                    (
+                        (
+                            f'/api/snc/ansible_inventory{options}'
+                            + "&sysparm_fields="
+                        )
+                        + ','.join(fields)
+                        + "&sysparm_query="
+                    )
+                    + filter_results
+                )
+                + "&table="
+            ) + table
+
             enhanced_groups = self.get_option('enhanced_groups')
         else:
-            path = '/api/now/table/' + table + options + \
-                "&sysparm_fields=" + ','.join(fields) + \
-                "&sysparm_query=" + filter_results
+            path = (
+                (f'/api/now/table/{table}{options}' + "&sysparm_fields=")
+                + ','.join(fields)
+                + "&sysparm_query="
+            ) + filter_results
+
 
         content = self.invoke('GET', path, None)
         strict = self.get_option('strict')
@@ -288,9 +303,8 @@ class InventoryModule(BaseInventoryPlugin, Constructable, Cacheable):
 
             # select name for host
             for k in selection:
-                if k in record:
-                    if record[k] != '':
-                        target = record[k]
+                if k in record and record[k] != '':
+                    target = record[k]
                 if target is not None:
                     break
 
@@ -303,7 +317,7 @@ class InventoryModule(BaseInventoryPlugin, Constructable, Cacheable):
             # set variables for host
             for k in record.keys():
                 k2 = k.replace('.', '_')
-                self.inventory.set_variable(host_name, 'sn_%s' % k2, record[k])
+                self.inventory.set_variable(host_name, f'sn_{k2}', record[k])
 
             # add relationship based groups
             if enhanced and enhanced_groups:
@@ -313,7 +327,7 @@ class InventoryModule(BaseInventoryPlugin, Constructable, Cacheable):
                         item['ci_rel_type'].split('__')[0])
                     ci_type = to_safe_group_name(item['ci_type'])
                     if ci != '' and ci_rel_type != '' and ci_type != '':
-                        child_group = "%s_%s" % (ci, ci_rel_type)
+                        child_group = f"{ci}_{ci_rel_type}"
                         self.inventory.add_group(child_group)
                         self.inventory.add_child(child_group, host_name)
 
@@ -324,7 +338,7 @@ class InventoryModule(BaseInventoryPlugin, Constructable, Cacheable):
                     ci_type = to_safe_group_name(item['ci_type'])
 
                     if ci != '' and ci_rel_type != '' and ci_type != '':
-                        child_group = "%s_%s" % (ci, ci_rel_type)
+                        child_group = f"{ci}_{ci_rel_type}"
                         self.inventory.add_group(child_group)
                         self.inventory.add_child(child_group, host_name)
 
@@ -333,7 +347,10 @@ class InventoryModule(BaseInventoryPlugin, Constructable, Cacheable):
                 self.inventory.get_host(host_name).get_vars(), host_name,
                 strict)
 
-            self._add_host_to_composed_groups(self.get_option('groups'),
-                                              dict(), host_name, strict)
-            self._add_host_to_keyed_groups(self.get_option('keyed_groups'),
-                                           dict(), host_name, strict)
+            self._add_host_to_composed_groups(
+                self.get_option('groups'), {}, host_name, strict
+            )
+
+            self._add_host_to_keyed_groups(
+                self.get_option('keyed_groups'), {}, host_name, strict
+            )
